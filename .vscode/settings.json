@@ -1,0 +1,12 @@
+{
+    // Insert spaces when pressing Tab. This setting is overriden
+    // based on the file contents when `editor.detectIndentation` is true.
+    "editor.insertSpaces": true,
+
+    // When opening a file, `editor.tabSize` and `editor.insertSpaces`
+    // will be detected based on the file contents.
+    "editor.detectIndentation": true,
+ 
+    // Path to Pylint, you can use a custom version of pylint by modifying this setting to include the full path.
+    "python.linting.pylintPath": "/Users/mostekcm/.pyenv/shims/pylint",
+}
