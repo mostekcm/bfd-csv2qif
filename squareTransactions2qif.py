@@ -3,13 +3,12 @@
 
 import sys
 import os
-from commonCsv2Qif import UnicodeReader, CreateOutFiles, WriteTaxedTransaction, WriteTransaction
+from commonCsv2Qif import UnicodeReader, CreateOutFiles, WriteTaxedByZipTransaction, WriteTransaction
 
 TOTAL_COLUMN = "Total Collected"
 TAX_COLUMN = "Tax"
 CREDIT_COLUMN = "Card"
-TAX_CATEGORY_COLUMN = "Tax Category"
-CATEGORY_COLUMN = "Category"
+ZIP_COLUMN = "Zip Code"
 DATE_COLUMN = "Date"
 PAYEE_COLUMN = "Payee"
 FEE_COLUMN = "Fees"
@@ -47,17 +46,17 @@ def Import(fileName):
         total = row.getFloatValue(TOTAL_COLUMN)
         tax = row.getFloatValue(TAX_COLUMN)
         credit = row.getFloatValue(CREDIT_COLUMN)
-        category = row.getStringValue(CATEGORY_COLUMN)
-        taxCategory = row.getStringValue(TAX_CATEGORY_COLUMN)
+        zipCode = row.getStringValue(ZIP_COLUMN)
         payee = row.getStringValue(PAYEE_COLUMN)
         fee = row.getFloatValue(FEE_COLUMN)
 
         if tax > 0:
+            print("tax line: " + str(tax) + ", zip: " + str(zipCode))
             if abs(credit) < 0.01:
                 # If tax is > 0 and credit === 0, put this in the cash drawer
-                WriteTaxedTransaction(outFileDict[CASH]['file'], date, payee, category, total, taxCategory)
+                WriteTaxedByZipTransaction(outFileDict[CASH]['file'], date, payee, total, zipCode)
             else:
-                WriteTaxedTransaction(outFileDict[SQUARE]['file'], date, payee, category, total, taxCategory)
+                WriteTaxedByZipTransaction(outFileDict[SQUARE]['file'], date, payee, total, zipCode)
                 WriteTransaction(outFileDict[SQUARE]['file'], date, 'square fee', 'Expenses:Bank Service Charge:Square', fee)
         else:
             WriteTransaction(outFileDict[SQUARE]['file'], date, payee, 'Assets:Accounts Receivable', total)
