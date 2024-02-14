@@ -3,11 +3,14 @@
 
 import sys
 import os
-from commonCsv2Qif import UnicodeReader, CreateOutFiles, WriteTaxedByZipTransaction, WriteTransaction
+from commonCsv2Qif import UnicodeReader, CreateOutFiles, WriteTransaction
+from commonCsv2QifTax import WriteTaxedByZipTransaction
+from salesTaxInfo import updateZipCodes
 
 TOTAL_COLUMN = "Total Collected"
 TAX_COLUMN = "Tax"
 CREDIT_COLUMN = "Card"
+CASH_COLUMN = "Cash"
 ZIP_COLUMN = "Zip Code"
 DATE_COLUMN = "Date"
 PAYEE_COLUMN = "Payee"
@@ -40,23 +43,32 @@ def Import(fileName):
 
     outFileDict = CreateOutFiles(fileName, outFileDict)
 
+    officeAddress = '12084 Waconia Cir NE, Blaine, MN  55449'
+    addresses = [officeAddress]
+
+    addressesDict = updateZipCodes(addresses)
+
+    zipInfo = addressesDict[officeAddress]['zipInfo']
+    taxCategory = zipInfo['name']
+    taxRate = zipInfo['rate']
+
+
     for row in reader:
         # First check what account type this is
         date = row.getStringValue(DATE_COLUMN)
         total = row.getFloatValue(TOTAL_COLUMN)
         tax = row.getFloatValue(TAX_COLUMN)
         credit = row.getFloatValue(CREDIT_COLUMN)
-        zipCode = row.getStringValue(ZIP_COLUMN)
+        cash = row.getFloatValue(CASH_COLUMN)
         payee = row.getStringValue(PAYEE_COLUMN)
         fee = row.getFloatValue(FEE_COLUMN)
 
         if tax > 0:
-            print("tax line: " + str(tax) + ", zip: " + str(zipCode))
-            if abs(credit) < 0.01:
-                # If tax is > 0 and credit === 0, put this in the cash drawer
-                WriteTaxedByZipTransaction(outFileDict[CASH]['file'], date, payee, total, zipCode)
+            if abs(cash) > 0:
+                # If tax is > 0 and cash > 0, put this in the cash drawer
+                WriteTaxedByZipTransaction(outFileDict[CASH]['file'], date, payee, total, taxCategory, taxRate)
             else:
-                WriteTaxedByZipTransaction(outFileDict[SQUARE]['file'], date, payee, total, zipCode)
+                WriteTaxedByZipTransaction(outFileDict[SQUARE]['file'], date, payee, total, taxCategory, taxRate)
                 WriteTransaction(outFileDict[SQUARE]['file'], date, 'square fee', 'Expenses:Bank Service Charge:Square', fee)
         else:
             WriteTransaction(outFileDict[SQUARE]['file'], date, payee, 'Assets:Accounts Receivable', total)

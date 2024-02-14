@@ -14,7 +14,8 @@ singletonClient = None
 singletonZipMap = None
 singletonAddressMap = None
 
-addressMapFileName = '.addressMap.cache.pkl'
+dir_path = os.path.dirname(os.path.realpath(__file__))
+addressMapFileName = os.path.join(dir_path,'.addressMap.cache.pkl')
 
 def getClient():
     global singletonClient 
@@ -76,6 +77,8 @@ def updateZipCodes(addresses):
         print('Batch {}'.format(batch[i]))
         i += 1
 
+    foundBadAddress = False
+
     if i > 0:
         try:
             print('Trying to send batch of %d address(es)'%i)
@@ -89,6 +92,7 @@ def updateZipCodes(addresses):
 
             if len(candidates) == 0:
                 print("Address {} is invalid.\n".format(addressesByIndex[i]))
+                foundBadAddress = True
                 continue
 
             candidate = candidates[0]
@@ -101,12 +105,14 @@ def updateZipCodes(addresses):
     else:
         print("All addresses were in the cache")
 
+    if foundBadAddress: raise BadAddressesError
     return addressesDict
 
 def getZipToTaxMapping(zipLookup):
     global singletonZipMap
     if singletonZipMap == None:
-        reader = UnicodeReader(open('mnZipCodes.tsv', 'r'), delimiter='\t')
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        reader = UnicodeReader(open(os.path.join(dir_path,'mnZipCodes.tsv'), 'r'), delimiter='\t')
         singletonZipMap = {}
         ## Let's get some indexes to make future code cleaner
 
@@ -121,9 +127,5 @@ def getZipToTaxMapping(zipLookup):
 
     return singletonZipMap[res[1]]
 
-class UnknownZipException(Exception):
+class BadAddressesError(Exception):
     """Raised when we have never seen this zip code before"""
-    
-    def __init__(self, zipCode, address, city):
-        self.zip = zipCode
-        self.address = freeFormAddress(address,city,zipCode)
